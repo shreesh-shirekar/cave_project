@@ -1,0 +1,14 @@
+HOW TO RUN A LISTENER (about 10 minutes each)
+
+1. Unzip this folder on the test laptop. Keep test.html and the stimuli folder together.
+2. Plug in the headphones you'll use for everyone.
+3. Open test.html in Chrome (double-click, or drag it into a Chrome window). No internet needed.
+4. Before the first real listener, run through it once yourself with code PILOT,
+   and set the laptop volume on the "Set the volume" screen. Then don't touch the volume again.
+   Delete ratings_PILOT.csv afterwards.
+5. For each listener: hand them the laptop in a quiet room, code L01, L02, L03... (never names).
+6. At the end the page downloads ratings_Lxx.csv to Downloads.
+   Move it into results/raw/ in the project folder and back it up (WhatsApp it to yourself, etc.).
+7. Click "Next listener" to reset the page for the next person.
+
+After the last listener: in the project folder run  python analyse_results.py

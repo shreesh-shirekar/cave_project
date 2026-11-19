@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Listening Test</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+    --accent: #1f6f8b; --accent-soft: #e2eef2; --play: #c1453b; --ok: #2e8b57; --warn: #b26b00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 16px 60px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 22px; margin: 16px 0; }
+  label.row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+  input[type=text] { font: inherit; padding: 8px 10px; border: 1px solid var(--line);
+                     border-radius: 8px; width: 160px; }
+  button { font: inherit; border-radius: 8px; border: 1px solid var(--line); background: #fff;
+           padding: 9px 16px; cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0 18px; }
+  .progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+  .grid { display: grid; gap: 0; }
+  .vrow { display: grid; align-items: center; gap: 14px; padding: 12px 6px;
+          border-top: 1px solid var(--line); }
+  .vrow.playing { background: var(--accent-soft); }
+  .playbtn { width: 64px; height: 44px; font-weight: 600; font-size: 18px; }
+  .playbtn.on { background: var(--play); color: #fff; border-color: var(--play); }
+  .playbtn.heard::after { content: " ✓"; font-size: 12px; color: var(--ok); }
+  .playbtn.on.heard::after { color: #fff; }
+  .scale { display: flex; flex-direction: column; }
+  .scale input[type=range] { width: 100%; accent-color: var(--accent); }
+  .scale input.untouched { opacity: .35; }
+  .ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .head { font-size: 13px; color: var(--muted); font-weight: 600; padding: 0 6px 6px; }
+  .bar { display: flex; gap: 12px; align-items: center; justify-content: space-between;
+         margin-top: 18px; flex-wrap: wrap; }
+  .hint { font-size: 14px; color: var(--warn); }
+  .hint.ok { color: var(--ok); }
+  .loopnote { font-size: 13px; color: var(--muted); }
+  @media (max-width: 700px) { .vrow { grid-template-columns: 64px 1fr !important; }
+                              .vrow .scale.extra { grid-column: 2; } .head { display: none; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+const CONFIG = {"practice": {"id": "practice", "block": "P", "source": "guitar-pick", "take": "polished", "versions": [{"file": "stimuli/blockA/guitar-pick_polished__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, "screens": [{"id": "A_guitar-pick_polished", "block": "A", "source": "guitar-pick", "take": "polished", "versions": [{"file": "stimuli/blockA/guitar-pick_polished__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT0.8.wav", "room": "RT0.8", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT1.1.wav", "room": "RT1.1", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT2.5.wav", "room": "RT2.5", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_polished__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, {"id": "A_guitar-pick_rough", "block": "A", "source": "guitar-pick", "take": "rough", "versions": [{"file": "stimuli/blockA/guitar-pick_rough__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_rough__RT0.8.wav", "room": "RT0.8", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_rough__RT1.1.wav", "room": "RT1.1", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_rough__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_rough__RT2.5.wav", "room": "RT2.5", "condition": "sweep"}, {"file": "stimuli/blockA/guitar-pick_rough__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, {"id": "A_speech_polished", "block": "A", "source": "speech", "take": "polished", "versions": [{"file": "stimuli/blockA/speech_polished__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/speech_polished__RT0.8.wav", "room": "RT0.8", "condition": "sweep"}, {"file": "stimuli/blockA/speech_polished__RT1.1.wav", "room": "RT1.1", "condition": "sweep"}, {"file": "stimuli/blockA/speech_polished__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/speech_polished__RT2.5.wav", "room": "RT2.5", "condition": "sweep"}, {"file": "stimuli/blockA/speech_polished__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, {"id": "A_voice_polished", "block": "A", "source": "voice", "take": "polished", "versions": [{"file": "stimuli/blockA/voice_polished__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/voice_polished__RT0.8.wav", "room": "RT0.8", "condition": "sweep"}, {"file": "stimuli/blockA/voice_polished__RT1.1.wav", "room": "RT1.1", "condition": "sweep"}, {"file": "stimuli/blockA/voice_polished__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/voice_polished__RT2.5.wav", "room": "RT2.5", "condition": "sweep"}, {"file": "stimuli/blockA/voice_polished__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, {"id": "A_voice_rough", "block": "A", "source": "voice", "take": "rough", "versions": [{"file": "stimuli/blockA/voice_rough__RT0.3.wav", "room": "RT0.3", "condition": "sweep"}, {"file": "stimuli/blockA/voice_rough__RT0.8.wav", "room": "RT0.8", "condition": "sweep"}, {"file": "stimuli/blockA/voice_rough__RT1.1.wav", "room": "RT1.1", "condition": "sweep"}, {"file": "stimuli/blockA/voice_rough__RT1.8.wav", "room": "RT1.8", "condition": "sweep"}, {"file": "stimuli/blockA/voice_rough__RT2.5.wav", "room": "RT2.5", "condition": "sweep"}, {"file": "stimuli/blockA/voice_rough__RT4.0.wav", "room": "RT4.0", "condition": "sweep"}]}, {"id": "B_guitar-pick", "block": "B", "source": "guitar-pick", "take": "polished", "versions": [{"file": "stimuli/blockB/guitar-pick_polished__IR_1_measured.wav", "room": "IR_1", "condition": "measured"}, {"file": "stimuli/blockB/guitar-pick_polished__IR_1_smooth.wav", "room": "IR_1", "condition": "smooth"}, {"file": "stimuli/blockB/guitar-pick_polished__IR_2_measured.wav", "room": "IR_2", "condition": "measured"}, {"file": "stimuli/blockB/guitar-pick_polished__IR_2_smooth.wav", "room": "IR_2", "condition": "smooth"}, {"file": "stimuli/blockB/guitar-pick_polished__IR_3_measured.wav", "room": "IR_3", "condition": "measured"}, {"file": "stimuli/blockB/guitar-pick_polished__IR_3_smooth.wav", "room": "IR_3", "condition": "smooth"}]}, {"id": "B_voice", "block": "B", "source": "voice", "take": "polished", "versions": [{"file": "stimuli/blockB/voice_polished__IR_1_measured.wav", "room": "IR_1", "condition": "measured"}, {"file": "stimuli/blockB/voice_polished__IR_1_smooth.wav", "room": "IR_1", "condition": "smooth"}, {"file": "stimuli/blockB/voice_polished__IR_2_measured.wav", "room": "IR_2", "condition": "measured"}, {"file": "stimuli/blockB/voice_polished__IR_2_smooth.wav", "room": "IR_2", "condition": "smooth"}, {"file": "stimuli/blockB/voice_polished__IR_3_measured.wav", "room": "IR_3", "condition": "measured"}, {"file": "stimuli/blockB/voice_polished__IR_3_smooth.wav", "room": "IR_3", "condition": "smooth"}]}], "levelFile": "stimuli/blockA/guitar-pick_polished__RT1.1.wav"};
+const app = document.getElementById("app");
+const state = { listener: "", musician: "", hearing: "", results: [], screenIndex: 0, order: [] };
+const LETTERS = "ABCDEFGHIJKL";
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; }
+function save() { try { localStorage.setItem("cave_test_" + state.listener, JSON.stringify(state.results)); } catch (e) {} }
+
+// ---------------------------------------------------------------- welcome
+function welcome() {
+  app.innerHTML = `
+  <h1>Room listening test</h1>
+  <p class="muted">HRT 322 final project · about 10 minutes · headphones on</p>
+  <div class="card">
+    <p>You'll hear short clips of voice, guitar and speech, each played back in several different
+    rooms. For each clip, rate how much you <b>like</b> the sound of each room. There are no right
+    answers; we want your honest taste.</p>
+    <p>We only record a code (not your name), the two yes/no answers below and your ratings.
+    You can stop at any time.</p>
+    <label class="row">Listener code <input type="text" id="code" placeholder="e.g. L03"></label>
+    <label class="row">Do you play an instrument or sing regularly?
+      <select id="mus"><option value="">choose</option><option>yes</option><option>no</option></select></label>
+    <label class="row">Any known hearing problems?
+      <select id="hear"><option value="">choose</option><option>no</option><option>yes</option></select></label>
+    <label class="row"><input type="checkbox" id="consent"> I agree to take part.</label>
+    <div class="bar"><span></span><button class="primary" id="go" disabled>Continue</button></div>
+  </div>`;
+  const $ = id => document.getElementById(id);
+  const check = () => $("go").disabled =
+    !($("code").value.trim() && $("mus").value && $("hear").value && $("consent").checked);
+  ["code", "mus", "hear", "consent"].forEach(id => { $(id).oninput = check; $(id).onchange = check; });
+  $("go").onclick = () => {
+    state.listener = $("code").value.trim().replace(/[^\w-]/g, "_");
+    state.musician = $("mus").value; state.hearing = $("hear").value;
+    level();
+  };
+}
+
+// ---------------------------------------------------------------- volume
+function level() {
+  const a = new Audio(CONFIG.levelFile); a.loop = true;
+  app.innerHTML = `
+  <h1>Set the volume</h1>
+  <div class="card">
+    <p>Press play and set the computer's volume so this is at a comfortable, fairly full listening
+    level, the way you'd enjoy music. <b>Don't change the volume again</b> for the rest of the test.</p>
+    <div class="bar"><button id="p" class="playbtn">▶</button>
+      <label class="row"><input type="checkbox" id="ok"> Volume is set, I won't touch it</label>
+      <button class="primary" id="go" disabled>Continue</button></div>
+  </div>`;
+  const p = document.getElementById("p");
+  p.onclick = () => { if (a.paused) { a.play(); p.textContent = "■"; p.classList.add("on"); }
+                      else { a.pause(); p.textContent = "▶"; p.classList.remove("on"); } };
+  document.getElementById("ok").onchange = e => document.getElementById("go").disabled = !e.target.checked;
+  document.getElementById("go").onclick = () => { a.pause(); instructions(); };
+}
+
+function instructions() {
+  app.innerHTML = `
+  <h1>How it works</h1>
+  <div class="card">
+    <p>Each screen has one performance in several rooms, labelled A, B, C… in random order.</p>
+    <p>• Click a letter to play it. Clicking another letter switches rooms <b>at the same moment</b>
+       in the music, so you can compare directly. Click the playing letter again to stop.</p>
+    <p>• Listen to every version at least once (a ✓ appears), then set every slider.</p>
+    <p>• Use the whole slider. Put your favourite near the right and the one you like least near the left.</p>
+    <p>• On the last few screens you'll also rate <b>fullness</b> (thin → full, rich) and
+       <b>clarity</b> (blurred → every note clear).</p>
+    <p>First, a short practice screen that isn't scored.</p>
+    <div class="bar"><span></span><button class="primary" id="go">Start practice</button></div>
+  </div>`;
+  document.getElementById("go").onclick = () => screen(CONFIG.practice, true);
+}
+
+// ---------------------------------------------------------------- rating screen
+let current = null;   // { audios, playing, t0 }
+function stopAll() { if (current) { current.audios.forEach(a => a.pause()); } }
+
+function screen(cfg, isPractice) {
+  stopAll();
+  const total = state.order.length;
+  const idx = state.screenIndex;
+  const isB = cfg.block === "B";
+  const versions = shuffle(cfg.versions).map((v, i) => ({ ...v, label: LETTERS[i] }));
+  const cols = isB ? "64px 1fr 1fr 1fr" : "64px 1fr";
+  const title = isPractice ? "Practice" : `Screen ${idx + 1} of ${total}`;
+  const pct = isPractice ? 0 : (idx / total) * 100;
+
+  app.innerHTML = `
+  <h2>${title}</h2>
+  <div class="progress"><div style="width:${pct}%"></div></div>
+  <p class="muted">${isB ? "Rate how much you like each room, and how full and how clear it sounds."
+                         : "Rate how much you like the sound of each room."}</p>
+  <div class="card">
+    <div class="vrow head" style="grid-template-columns:${cols}">
+      <span></span><span>How much do you like it?</span>
+      ${isB ? "<span>Fullness</span><span>Clarity</span>" : ""}</div>
+    <div class="grid" id="rows"></div>
+    <div class="bar"><span class="hint" id="hint"></span>
+      <span class="loopnote">Clips loop. Switching keeps your place in the music.</span>
+      <button class="primary" id="next" disabled>${isPractice ? "Start the real test" : "Next"}</button></div>
+  </div>`;
+
+  const rowsEl = document.getElementById("rows");
+  const audios = versions.map(v => { const a = new Audio(v.file); a.preload = "auto"; a.loop = true; return a; });
+  const rec = versions.map(() => ({ plays: 0, pref: null, full: null, clar: null }));
+  current = { audios, playing: -1, t0: performance.now() };
+
+  const slider = (key, i, left, right, extra) => `
+    <div class="scale ${extra ? "extra" : ""}"><input type="range" min="0" max="100" value="50"
+      class="untouched" data-k="${key}" data-i="${i}">
+      <div class="ends"><span>${left}</span><span>${right}</span></div></div>`;
+
+  versions.forEach((v, i) => {
+    const r = el(`<div class="vrow" style="grid-template-columns:${cols}">
+      <button class="playbtn" data-i="${i}">${v.label}</button>
+      ${slider("pref", i, "dislike a lot", "like a lot")}
+      ${isB ? slider("full", i, "thin", "full", true) + slider("clar", i, "blurred", "clear", true) : ""}
+    </div>`);
+    rowsEl.appendChild(r);
+  });
+
+  const buttons = [...rowsEl.querySelectorAll(".playbtn")];
+  buttons.forEach(b => b.onclick = () => {
+    const i = +b.dataset.i;
+    const prev = current.playing;
+    if (prev === i) { audios[i].pause(); current.playing = -1; }
+    else {
+      let t = 0;
+      if (prev >= 0) { t = audios[prev].currentTime; audios[prev].pause(); }
+      const a = audios[i];
+      a.currentTime = Math.min(t, Math.max((a.duration || 1e9) - 0.05, 0));
+      a.play(); current.playing = i; rec[i].plays++;
+      b.classList.add("heard");
+    }
+    buttons.forEach((x, k) => { x.classList.toggle("on", k === current.playing);
+      x.closest(".vrow").classList.toggle("playing", k === current.playing); });
+    update();
+  });
+  rowsEl.querySelectorAll("input[type=range]").forEach(s => s.oninput = () => {
+    s.classList.remove("untouched"); rec[+s.dataset.i][s.dataset.k] = +s.value; update();
+  });
+
+  const nextBtn = document.getElementById("next");
+  function update() {
+    const unheard = rec.filter(r => r.plays === 0).length;
+    const unset = rec.reduce((n, r) => n + (r.pref === null) + (isB ? (r.full === null) + (r.clar === null) : 0), 0);
+    const hint = document.getElementById("hint");
+    if (unheard) { hint.textContent = `${unheard} version${unheard > 1 ? "s" : ""} not played yet`; hint.className = "hint"; }
+    else if (unset) { hint.textContent = `${unset} slider${unset > 1 ? "s" : ""} still to set`; hint.className = "hint"; }
+    else { hint.textContent = "All set"; hint.className = "hint ok"; }
+    nextBtn.disabled = !!(unheard || unset);
+  }
+  update();
+
+  nextBtn.onclick = () => {
+    stopAll();
+    const secs = ((performance.now() - current.t0) / 1000).toFixed(0);
+    const stamp = new Date().toISOString();
+    versions.forEach((v, i) => state.results.push({
+      listener: state.listener, musician: state.musician, hearing: state.hearing,
+      screen_order: isPractice ? 0 : idx + 1, screen_id: cfg.id, block: cfg.block,
+      source: cfg.source, take: cfg.take, label: v.label, file: v.file, room: v.room,
+      condition: v.condition, preference: rec[i].pref, fullness: isB ? rec[i].full : "",
+      clarity: isB ? rec[i].clar : "", plays: rec[i].plays, seconds_on_screen: secs, timestamp: stamp,
+    }));
+    save();
+    if (isPractice) { state.screenIndex = 0; screen(state.order[0], false); }
+    else if (idx + 1 < total) { state.screenIndex++; screen(state.order[state.screenIndex], false); }
+    else finish();
+  };
+}
+
+// ---------------------------------------------------------------- finish
+function toCSV(rows) {
+  const keys = Object.keys(rows[0]);
+  const q = v => { v = v === null || v === undefined ? "" : String(v);
+                   return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+  return [keys.join(","), ...rows.map(r => keys.map(k => q(r[k])).join(","))].join("\n");
+}
+function download() {
+  const blob = new Blob([toCSV(state.results)], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `ratings_${state.listener}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function finish() {
+  app.innerHTML = `
+  <h1>Thank you!</h1>
+  <div class="card">
+    <p>That's everything. Your ratings file (<b>ratings_${state.listener}.csv</b>) has downloaded.</p>
+    <p class="muted">For the researchers: move it into <code>results/raw/</code>. If it didn't
+    download, press the button.</p>
+    <div class="bar"><button id="dl">Download again</button>
+      <button class="primary" id="new">Next listener</button></div>
+  </div>`;
+  download();
+  document.getElementById("dl").onclick = download;
+  document.getElementById("new").onclick = () => location.reload();
+}
+
+// ---------------------------------------------------------------- start
+const A = CONFIG.screens.filter(s => s.block === "A");
+const B = CONFIG.screens.filter(s => s.block === "B");
+state.order = [...shuffle(A), ...shuffle(B)];   // sweep first, then the cave comparisons
+welcome();
+</script>
+</body>
+</html>
